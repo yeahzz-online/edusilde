@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  FACULTY
+  STUDENT
+  SMARTBOARD
+}
+
+enum PresentationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String
+  role          Role           @default(STUDENT)
+  departmentId  String?
+  semester      Int?
+  otp           String?
+  otpExpires    DateTime?
+  isVerified    Boolean        @default(false)
+  department    Department?    @relation(fields: [departmentId], references: [id])
+  presentations Presentation[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Department {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  users     User[]
+  classes   Class[]
+  subjects  Subject[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Class {
+  id           String     @id @default(cuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  subjects     Subject[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Subject {
+  id             String         @id @default(cuid())
+  name           String
+  code           String         @default("")
+  departmentId   String
+  classId        String
+  department     Department     @relation(fields: [departmentId], references: [id])
+  class          Class          @relation(fields: [classId], references: [id])
+  presentations  Presentation[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Presentation {
+  id          String             @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String
+  publicId    String             @default("")
+  status      PresentationStatus @default(PENDING)
+  subjectId   String
+  uploaderId  String
+  subject     Subject            @relation(fields: [subjectId], references: [id])
+  uploader    User               @relation(fields: [uploaderId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model Smartboard {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  code      String   @unique
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
